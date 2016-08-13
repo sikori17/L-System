@@ -8,27 +8,71 @@
 
 	<body style = "position: fixed; top: 0; left: 0; right: 0; bottom: 0;">
 		
-		<!--<canvas id="canvas" width="500" height="500" style="border:2px solid #000000;">
-		</canvas>-->
-
 		<div id='svg' style="width:100%; height:100%"></div>
 
 		<script>
 
-			var variables = ["F"];
-			var constants = ["+", "-"];
-			var rules = {
+			var turtle = null;
 
-				Init : function(){
-					for(var i = 0; i < constants.length; i++){
-						this[constants[i]] = constants[i];
+			function System(commandMap, rules, constants, axiom){
+
+				this.variables = [];
+				this.commandMap = {};
+
+				console.log(JSON.stringify(commandMap));
+
+				for(var i = 0; i < commandMap.length; i++){
+					this.variables[i] = commandMap[i].variable;
+					console.log(JSON.stringify(commandMap));
+					// variable to command array
+					this.commandMap[commandMap[i].variable] = commandMap[i].command;
+				}
+
+				console.log(JSON.stringify(this.variables));
+				console.log(JSON.stringify(this.commandMap));
+
+				this.constants = constants;
+				this.axiom = axiom;
+
+				this.rules = {
+
+					Init : function(constants){
+						for(var i = 0; i < constants.length; i++){
+							this[constants[i]] = constants[i];
+						}
 					}
-				},
+				};
 
-				"F" : "F+F-F-F+F"
-			};
-			var axiom = "F";
-			var iterations = 8;
+				for(var i = 0; i < rules.length; i++){
+					this.rules[rules[i][0]] = rules[i][1];
+				}
+
+				this.Init = function(){
+					this.rules.Init(this.constants);
+				};
+
+				this.Run = function(iterations){
+
+					var product = this.axiom;
+
+					for(var i = 0; i < iterations; i++){
+						product = this.ApplyRules(product);
+					}
+
+					return product;
+				};
+
+				this.ApplyRules = function(string){
+
+					var result = ""
+
+					for(var i = 0; i < string.length; i++){
+						result += this.rules[string[i]];
+					}
+
+					return result;
+				};
+			}
 
 			var turtle = {
 
@@ -38,19 +82,9 @@
 
 				max:{x:0, y:0},
 
-				canvas : null,
-				ctx : null,
 				svg: null,
 
 				Init : function(){
-					/*
-					this.canvas = document.getElementById("canvas");
-					this.ctx = canvas.getContext("2d");
-
-					this.ctx.strokeStyle = "#000000";
-					this.ctx.lineWidth = 2;
-					this.ctx.moveTo(this.pos.x, this.pos.y);
-					*/
 
 					this.lastPos.x = this.pos.x;
 					this.lastPos.y = this.pos.y;
@@ -58,55 +92,62 @@
 					this.svg = SVG('svg').size('100%', '100%');
 				},
 
-				Run : function(string){
+				commands : {
+					"Draw" : function(params){this.Draw(params.distance);},
+					"Rotate" : function(params){this.Rotate(params.degrees);}
+				},
+
+				Run : function(string, commandMap){
+
+					var command = null;
 
 					for(var i = 0; i < string.length; i++){
-						this[string[i]]();
+						command = commandMap[string[i]];
+						// find command type, bind to turtle, pass parameter object
+						this.commands[command[0]].bind(this)(command[1]);
 					}
 
 					this.svg.viewbox(0, this.max.y, this.max.x, -this.max.y);
 					console.log(this.svg.viewbox().zoom);
 				},
 
-				//commands : {
-					"F" : function(){
+				Draw : function(distance){
 
-						this.lastPos.x = this.pos.x;
-						this.lastPos.y = this.pos.y;
+					this.lastPos.x = this.pos.x;
+					this.lastPos.y = this.pos.y;
 
-						this.pos.x += this.vector.x; 
-						this.pos.y += this.vector.y;
+					this.pos.x += (this.vector.x * distance); 
+					this.pos.y += (this.vector.y * distance);
 
-						if(this.pos.x > this.max.x) this.max.x = this.pos.x;
-						if(this.pos.y < this.max.y) this.max.y = this.pos.y;
-						/*
-						this.ctx.lineTo(this.pos.x, this.pos.y);
-						this.ctx.stroke();
-						*/
-						this.svg.line(this.lastPos.x, this.lastPos.y, this.pos.x, this.pos.y).stroke({width:2});
-					},
-					"+" : function(){
-						this.vector = Rotate(this.vector, -90);
-					},
-					"-" : function(){
-						this.vector = Rotate(this.vector, 90);
-					}
-				//}
+					if(this.pos.x > this.max.x) this.max.x = this.pos.x;
+					if(this.pos.y < this.max.y) this.max.y = this.pos.y;
+
+					this.svg.line(this.lastPos.x, this.lastPos.y, this.pos.x, this.pos.y).stroke({width:2});
+				},
+
+				Rotate : function(degrees){
+					this.vector = Rotate(this.vector, degrees);
+				}
 			}
 
-			var string = axiom;
-			var product = null;
+			var kochSystem = new System(
+				[	
+					{variable : "F", command : ["Draw", {distance: 1}]},
+					{variable : "+", command : ["Rotate", {degrees: -90}]},
+					{variable : "-", command : ["Rotate", {degrees: 90}]}
+				],
+				[
+					["F", "F+F-F-F+F"]
+				],
+				["+", "-"],
+				"F"
+			);
 
-			rules.Init();
+			kochSystem.Init();
+			var string = kochSystem.Run(8);
+
 			turtle.Init();
-
-			for(var i = 0; i < iterations; i++){
-				product = ApplyRules(string);
-				string = product;
-			}
-
-			//turtle.Run = turtle.Run.bind(turtle);
-			turtle.Run(string);
+			turtle.Run(string, kochSystem.commandMap);
 
 			function ApplyRules(string){
 
