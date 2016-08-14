@@ -12,24 +12,17 @@
 
 		<script>
 
-			var turtle = null;
-
+			// Constructor for System
 			function System(commandMap, rules, constants, axiom){
 
 				this.variables = [];
 				this.commandMap = {};
 
-				console.log(JSON.stringify(commandMap));
-
 				for(var i = 0; i < commandMap.length; i++){
 					this.variables[i] = commandMap[i].variable;
-					console.log(JSON.stringify(commandMap));
 					// variable to command array
 					this.commandMap[commandMap[i].variable] = commandMap[i].command;
 				}
-
-				console.log(JSON.stringify(this.variables));
-				console.log(JSON.stringify(this.commandMap));
 
 				this.constants = constants;
 				this.axiom = axiom;
@@ -76,10 +69,11 @@
 
 			var turtle = {
 
-				vector : {x:1,y:0},
+				vector : {x:0,y:-1},
 				pos : {x:0, y:0},
 				lastPos : {x:0, y:0},
 
+				min : {x:0, y:0},
 				max:{x:0, y:0},
 
 				svg: null,
@@ -90,6 +84,17 @@
 					this.lastPos.y = this.pos.y;
 
 					this.svg = SVG('svg').size('100%', '100%');
+				},
+
+				Reset : function(){
+
+					this.vector = {x:0,y:-1};
+					this.pos = {x:0, y:0};
+					this.lastPos = {x:0, y:0};
+					this.min = {x:0, y:0};
+					this.max = {x:0, y:0};
+
+					this.svg.clear();
 				},
 
 				commands : {
@@ -104,11 +109,19 @@
 					for(var i = 0; i < string.length; i++){
 						command = commandMap[string[i]];
 						// find command type, bind to turtle, pass parameter object
-						this.commands[command[0]].bind(this)(command[1]);
+						if(command != null) this.commands[command[0]].bind(this)(command[1]);
 					}
 
-					this.svg.viewbox(0, this.max.y, this.max.x, -this.max.y);
+					var width = this.max.x - this.min.x;
+					var height = this.max.y - this.min.y;
+					//this.svg.viewbox(0, this.max.y, this.max.x, -this.max.y);
+					//this.svg.viewbox(0, this.max.y, this.max.x, -this.max.y);
+					this.svg.viewbox(this.min.x - width * 0.1, this.min.y - height * 0.1, width * 1.2, height * 1.2);
+					console.log(JSON.stringify(this.max));
 					console.log(this.svg.viewbox().zoom);
+
+					//var rect = this.svg.rect(width, height);
+					//rect.move(this.min.x, this.min.y);
 				},
 
 				Draw : function(distance){
@@ -120,7 +133,9 @@
 					this.pos.y += (this.vector.y * distance);
 
 					if(this.pos.x > this.max.x) this.max.x = this.pos.x;
-					if(this.pos.y < this.max.y) this.max.y = this.pos.y;
+					if(this.pos.x < this.min.x) this.min.x = this.pos.x;
+					if(this.pos.y > this.max.y) this.max.y = this.pos.y;
+					if(this.pos.y < this.min.y) this.min.y = this.pos.y;
 
 					this.svg.line(this.lastPos.x, this.lastPos.y, this.pos.x, this.pos.y).stroke({width:2});
 				},
@@ -130,9 +145,9 @@
 				}
 			}
 
-			var kochSystem = new System(
+			var koch = new System(
 				[	
-					{variable : "F", command : ["Draw", {distance: 1}]},
+					{variable : "F", command : ["Draw", {distance: 5}]},
 					{variable : "+", command : ["Rotate", {degrees: -90}]},
 					{variable : "-", command : ["Rotate", {degrees: 90}]}
 				],
@@ -143,11 +158,49 @@
 				"F"
 			);
 
-			kochSystem.Init();
-			var string = kochSystem.Run(8);
+			var sierpenski = new System(
+				[
+					{variable : "A", command : ["Draw", {distance: 5}]},
+					{variable : "B", command : ["Draw", {distance: 5}]},
+					{variable : "+", command : ["Rotate", {degrees: -60}]},
+					{variable : "-", command : ["Rotate", {degrees: 60}]}
+				],
+				[
+					["A", "+B-A-B+"],
+					["B", "-A+B+A-"]
+				],
+				["+", "-"],
+				"A"
+			);
 
+			var dragonCurve = new System(
+				[
+					{variable : "F", command : ["Draw", {distance: 5}]},
+					{variable : "-", command : ["Rotate", {degrees: -90}]},
+					{variable : "+", command : ["Rotate", {degrees: 90}]},
+				],
+				[
+					["X", "X+YF+"],
+					["Y", "-FX-Y"]
+				],
+				["F", "+", "-"],
+				"FX"
+			);
+
+			var sys = dragonCurve;
+			sys.Init();
 			turtle.Init();
-			turtle.Run(string, kochSystem.commandMap);
+
+			var iterations = 3;
+
+			Repaint();
+
+			function Repaint(){
+
+				turtle.Reset();
+				var string = sys.Run(iterations);
+				turtle.Run(string, sys.commandMap);
+			}
 
 			function ApplyRules(string){
 
@@ -173,6 +226,27 @@
 
 			function DegToRad(degrees){
 				return degrees * Math.PI / 180;
+			}
+
+			window.addEventListener("keypress", HandleKeyPress, false);
+
+			function HandleKeyPress(e){
+
+				console.log("key press: " + e.charCode);
+				console.log(JSON.stringify(e));
+
+				var redraw = false;
+
+				if(e.charCode == "61"){
+					iterations++;
+					redraw = true;
+				}
+				if(e.charCode == "45"){
+					iterations--;
+					redraw = true;
+				}
+
+				if(redraw) Repaint();
 			}
 
 		</script>
