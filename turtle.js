@@ -3,9 +3,14 @@ function Turtle(vector, pos){
 	this.vector = (vector == null) ? {x:1, y:0} : vector;
 	this.pos = (pos == null) ? {x:0, y:0} : pos;
 
+	this.color = "#000000";
+
 	this.lastPos = {x:this.pos.x, y:this.pos.y};
 	this.posStack = [];
 	this.vecStack = [];
+	this.colorStack = [];
+
+	this.trail = [];
 
 	this.min = {x:0, y:0};
 	this.max = {x:0, y:0};
@@ -16,6 +21,11 @@ function Turtle(vector, pos){
 
 		this.lastPos.x = this.pos.x;
 		this.lastPos.y = this.pos.y;
+
+		//var firstPos = [];
+		//firstPos[0] = this.pos.x;
+		//firstPos[1] = this.pos.y;
+		this.trail.push([this.pos.x, this.pos.y]);
 
 		this.svg = SVG('svg').size('100%', '100%');
 		this.svg.spof();
@@ -30,6 +40,7 @@ function Turtle(vector, pos){
 		this.max = {x:0, y:0};
 		this.posStack = [];
 		this.vecStack = [];
+		this.ResetTrail();
 
 		this.svg.clear();
 	};
@@ -43,6 +54,8 @@ function Turtle(vector, pos){
 			// if command exists, call command with parameter
 			if(command != null) this[command[0]](command[1]);
 		}
+
+		if(this.trail.length > 0) this.RenderTrail();
 
 		var width = this.max.x - this.min.x;
 		var height = this.max.y - this.min.y;
@@ -63,7 +76,17 @@ function Turtle(vector, pos){
 		if(this.pos.y > this.max.y) this.max.y = this.pos.y;
 		if(this.pos.y < this.min.y) this.min.y = this.pos.y;
 
-		this.svg.line(this.lastPos.x, this.lastPos.y, this.pos.x, this.pos.y).stroke({width:2});
+		//this.svg.line(this.lastPos.x, this.lastPos.y, this.pos.x, this.pos.y).stroke({width:2});
+		var nextPos =[];
+		nextPos[0] = this.pos.x;
+		nextPos[1] = this.pos.y;
+
+		this.trail.push(nextPos);
+	};
+
+	this.RenderTrail = function(){
+		//console.log("Render: " + this.color);
+		this.svg.polyline(this.trail).fill("none").stroke({width:1, color: this.color});
 	};
 
 	this.Rotate = function(degrees){
@@ -80,14 +103,40 @@ function Turtle(vector, pos){
 		vecCopy.x = this.vector.x;
 		vecCopy.y = this.vector.y;
 
+		var colorCopy = this.color;
+
 		this.posStack.push(posCopy);
 		this.vecStack.push(vecCopy);
+		this.colorStack.push(colorCopy);
 	};
 
 	this.Pop = function(){
+
+		this.RenderTrail();
+
 		this.pos = this.posStack.pop();
 		this.vector = this.vecStack.pop();
+		this.color = this.colorStack.pop();
+
+		var nextPos = [];
+		nextPos[0] = this.pos.x;
+		nextPos[1] = this.pos.y;
+		this.trail = [];
+		this.trail.push(nextPos);
 	};
+
+	this.ChangeColor = function(color) {
+		//console.log("ChangeColor: " + color);
+
+		this.RenderTrail();
+		this.ResetTrail();
+
+		this.color = color;
+	};
+
+	this.ResetTrail = function(){
+		this.trail = [[this.pos.x, this.pos.y]];
+	}
 
 }
 

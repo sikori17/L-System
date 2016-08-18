@@ -1,5 +1,16 @@
 function Generator(){
 
+	this.colors = [
+		"#000000", // Black
+		"#FF0000", // Red
+		"#00FF00", // Green
+		"#0000FF", // Blue
+		"#FF8D00", // Orange
+		"#F8FF00", // Yellow
+		"#1EFF00", // Green
+		"#E400FF"  // Purle
+	];
+
 	this.GenerateSystem = function(){
 
 		this.alphabet = this.ChooseAlphabet();
@@ -21,7 +32,7 @@ function Generator(){
 
 	this.ChooseAlphabet = function(){
 
-		var length = RandomInRange(2, 10);
+		var length = RandomInRange(2, 17);
 		var alphabet = "";
 
 		var letter = "";
@@ -73,14 +84,16 @@ function Generator(){
 
 	this.CreateRule = function(character, options){
 
-		var length = RandomInRange(1, 6);
+		var length = RandomInRange(1, 10);
 		var rule = "";
+
+		options = options.replace("]", "");
 
 		for(var i = 0; i < length; i++){
 			rule += options[RandomInRange(0, options.length - 1)];
 		}
 
-		console.log("Raw rule: " + rule);
+		//console.log("Raw rule: " + rule);
 
 		// Match any pushes with pops
 		rule = this.MatchPushes(rule);
@@ -94,7 +107,7 @@ function Generator(){
 
 	this.ChooseAxiom = function(options){
 
-		var length = RandomInRange(0, 3);
+		var length = RandomInRange(0, 7);
 
 		var axiom = "";
 		for(var i = 0; i < length; i++){
@@ -116,18 +129,26 @@ function Generator(){
 		var commands = [
 			["Draw", 5],
 			["Rotate", -this.angle],
-			["Rotate", this.angle]
+			["Rotate", this.angle],
+			["ChangeColor", null]
 		];
 
-		options = options.replace("\\[", "").replace("\\]","");
+		options = options.replace("[", "").replace("]","");
+		//console.log(options);
 
 		var result = [];
 		for(var i = 0; i < options.length; i++){
-			result.push({variable: options[i], command: commands[RandomInRange(0, commands.length - 1)]});
+
+			var com = commands[RandomInRange(0, commands.length - 1)].slice();
+			var color = this.colors[RandomInRange(0, this.colors.length - 1)];
+			//console.log("SetTo: " + color);
+			if(com[0] == "ChangeColor") com[1] = color;
+
+			result.push({variable: options[i], command: com});
 		}
 
 		result.push({variable: "[", command: ["Push", null]});
-		result.pop({variable: "]", command: ["Push", null]});
+		result.push({variable: "]", command: ["Pop", null]});
 
 		return result;
 	}
@@ -138,7 +159,7 @@ function Generator(){
 		var insertAt = null;
 
 		while(ind !== -1){
-			insertAt = RandomInRange(ind, string.length);
+			insertAt = RandomInRange(ind + 1, string.length);
 			string = string.slice(0, insertAt) + ']' + string.slice(insertAt);
 			ind = string.indexOf('[', ind + 1);
 		}

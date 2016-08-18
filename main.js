@@ -80,6 +80,12 @@ function Repaint(){
 }
 
 function Regenerate(){
+	iterations = 3;
+	sys = generator.GenerateSystem();
+	Repaint();
+}
+
+function SaveSystem(){
 
 }
 
@@ -91,9 +97,7 @@ function HandleKeyPress(e){
 
 	// Space
 	if(e.charCode == "32"){
-		iterations = 3;
-		sys = generator.GenerateSystem();
-		Repaint();
+		Regenerate();
 	}
 	// +
 	else if(e.charCode == "61"){
@@ -104,6 +108,9 @@ function HandleKeyPress(e){
 	else if(e.charCode == "45"){
 		iterations--;
 		redraw = true;
+	}
+	else if(e.charCode == "115"){
+		SaveSystem();
 	}
 
 	if(redraw) Repaint();
