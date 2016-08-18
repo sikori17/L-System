@@ -57,14 +57,13 @@ var pythagorasTree = new System(
 	"0"
 );
 
-//var sys = koch;
-var generator = new Generator();
+var generator = new Generator(17, 3, 10, 7, [36, 45, 60, 90, 120]);
 
 var sys = generator.GenerateSystem();
 sys.Init();
 
-var turtle = new Turtle(sys.vector, sys.pos);
-turtle.Init();
+var turtle = new Turtle();
+turtle.Init(sys.vector, sys.pos);
 
 var iterations = 3;
 
@@ -73,9 +72,7 @@ Repaint();
 function Repaint(){
 
 	turtle.Reset();
-	console.log("Create string");
 	var string = sys.Run(iterations);
-	console.log("Run");
 	turtle.Run(string, sys.commandMap);
 }
 

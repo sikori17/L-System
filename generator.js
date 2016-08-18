@@ -1,5 +1,14 @@
-function Generator(){
+function Generator(alphabetRange, constantsRange, ruleRange, axiomRange, anglesArray){
 
+	this.alphabetRange = alphabetRange;
+	this.constantsRange = constantsRange;
+	this.ruleRange = ruleRange;
+	this.axiomRange = axiomRange;
+	this.angles = anglesArray;
+
+	// Hack - hard coded right now
+	this.constantsSet = "+-|[";
+	// Hack - hard coded right now
 	this.colors = [
 		"#000000", // Black
 		"#FF0000", // Red
@@ -32,7 +41,7 @@ function Generator(){
 
 	this.ChooseAlphabet = function(){
 
-		var length = RandomInRange(2, 17);
+		var length = RandomInRange(1, this.alphabetRange);
 		var alphabet = "";
 
 		var letter = "";
@@ -51,29 +60,26 @@ function Generator(){
 
 	this.ChooseConstants = function(){
 
-		var length = RandomInRange(1, 3);
-		//var useStack = Math.round(Math.random());
-		var symbols = "+-|["
-		var constants = "";
+		var length = RandomInRange(1, this.constantsRange);
+		var result = "";
 
 		var cons = "";
 		for(var i = 0; i < length; i++){
-			cons = symbols[RandomInRange(0, symbols.length - 1)];
+			cons = this.constantsSet[RandomInRange(0, this.constantsSet.length - 1)];
 			// Re-roll if already in constants
-			if(!constants.includes(cons))
-				constants += cons;
+			if(!result.includes(cons))
+				result += cons;
 			else
 				i--;
 		}
 
-		return constants;
+		return result;
 	};
 
 	this.GenerateRules = function(){
 
 		var rules = [];
 		var options = this.alphabet + this.constants;
-		console.log("Options: " + options);
 
 		for(var i = 0; i < this.alphabet.length; i++){
 			rules.push(this.CreateRule(this.alphabet[i], options));
@@ -84,30 +90,26 @@ function Generator(){
 
 	this.CreateRule = function(character, options){
 
-		var length = RandomInRange(1, 10);
-		var rule = "";
+		var length = RandomInRange(1, this.ruleRange);
 
+		// Hack - only include pushes in initial set
+		// Makes enforcing push / pop symmetry easier in a bit
 		options = options.replace("]", "");
 
+		var rule = "";
 		for(var i = 0; i < length; i++){
 			rule += options[RandomInRange(0, options.length - 1)];
 		}
 
-		//console.log("Raw rule: " + rule);
-
 		// Match any pushes with pops
 		rule = this.MatchPushes(rule);
-
-		var result = [];
-		result[0] = character;
-		result[1] = rule;
 
 		return [character, rule];
 	};
 
 	this.ChooseAxiom = function(options){
 
-		var length = RandomInRange(0, 7);
+		var length = RandomInRange(0, this.axiomRange);
 
 		var axiom = "";
 		for(var i = 0; i < length; i++){
@@ -120,8 +122,7 @@ function Generator(){
 	};
 
 	this.ChooseAngle = function(){
-		var angles = [36, 45, 60, 90, 120];
-		return angles[RandomInRange(0, angles.length - 1)];
+		return this.angles[RandomInRange(0, this.angles.length - 1)];
 	};
 
 	this.GenerateCommands = function(options) {
@@ -133,26 +134,28 @@ function Generator(){
 			["ChangeColor", null]
 		];
 
+		// Hack - remove push / pop from options set, don't want them to be random
 		options = options.replace("[", "").replace("]","");
-		//console.log(options);
 
 		var result = [];
 		for(var i = 0; i < options.length; i++){
 
 			var com = commands[RandomInRange(0, commands.length - 1)].slice();
 			var color = this.colors[RandomInRange(0, this.colors.length - 1)];
-			//console.log("SetTo: " + color);
+			// Hack - hard coded check for randomizing color
 			if(com[0] == "ChangeColor") com[1] = color;
 
 			result.push({variable: options[i], command: com});
 		}
 
+		// Manually adding push / pop commands
 		result.push({variable: "[", command: ["Push", null]});
 		result.push({variable: "]", command: ["Pop", null]});
 
 		return result;
 	}
 
+	// Iterate to find pushes, randomly add a matching pop later in string
 	this.MatchPushes = function(string){
 
 		var ind = string.indexOf('[');
